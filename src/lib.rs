@@ -60,17 +60,17 @@ impl<T: Mul<Output = T> + Copy, const LENGTH: usize> Matrix<T, LENGTH> {
 }
 
 #[derive(Debug)]
-pub struct MatrixSlice<'a, T, const LENGTH: usize> {
-    refs_array: &'a [&'a Matrix<T, LENGTH>],
+pub struct MatrixSlice<'a, 'x, T, const LENGTH: usize> {
+    refs_array: &'a [&'x Matrix<T, LENGTH>],
 }
 
-impl<'a, T, const LENGTH: usize> MatrixSlice<'a, T, LENGTH> {
-    pub fn get_matrix_by_index(&self, index: usize) -> &Matrix<T, LENGTH> {
+impl<'a, 'x, T, const LENGTH: usize> MatrixSlice<'a, 'x, T, LENGTH> {
+    pub fn get_matrix_by_index(&self, index: usize) -> &'x Matrix<T, LENGTH> {
         self.refs_array[index]
     }
 }
 
-impl<'a, T: Add<Output = T> + Copy, const LENGTH: usize> MatrixSlice<'a, T, LENGTH> {
+impl<'a, 'x, T: Add<Output = T> + Copy, const LENGTH: usize> MatrixSlice<'a, 'x, T, LENGTH> {
     pub fn summary(&self) -> T {
         let length = self.refs_array.len();
         let mut sum = self.refs_array[0].summary();
@@ -81,7 +81,7 @@ impl<'a, T: Add<Output = T> + Copy, const LENGTH: usize> MatrixSlice<'a, T, LENG
     }
 }
 
-impl<'a, T: Mul<Output = T> + Copy, const LENGTH: usize> MatrixSlice<'a, T, LENGTH> {
+impl<'a, 'x, T: Mul<Output = T> + Copy, const LENGTH: usize> MatrixSlice<'a, 'x, T, LENGTH> {
     pub fn multiply(&self) -> T {
         let length = self.refs_array.len();
         let mut sum = self.refs_array[0].multiply();
@@ -147,20 +147,21 @@ mod tests {
         let result_matrix = Matrix::<i32, 5> {
             items: [6, 7, 8, 9, 10],
         };
-        let t = MatrixSlice::<i32, 5> {
-            refs_array: &[
-                &Matrix::<i32, 5> {
-                    items: [1, 2, 3, 4, 5],
-                },
-                &result_matrix,
-                &Matrix::<i32, 5> {
-                    items: [11, 12, 13, 14, 15],
-                },
-            ],
+        let result_matrix_ref: &Matrix<i32, 5> = {
+            let t = MatrixSlice::<i32, 5> {
+                refs_array: &[
+                    &Matrix::<i32, 5> {
+                        items: [1, 2, 3, 4, 5],
+                    },
+                    &result_matrix,
+                    &Matrix::<i32, 5> {
+                        items: [11, 12, 13, 14, 15],
+                    },
+                ],
+            };
+            t.get_matrix_by_index(1)
         };
-        let matrix = t.get_matrix_by_index(1);
-        assert_eq!(&[6, 7, 8, 9, 10], matrix.get_items());
-        assert_eq!(&[6, 7, 8, 9, 10], result_matrix.get_items());
+        assert_eq!(result_matrix_ref.get_items(), result_matrix.get_items());
     }
 
     #[test]
